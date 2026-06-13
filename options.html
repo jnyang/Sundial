@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sundial — Settings</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <main class="card">
+    <header class="head">
+      <div class="logo" aria-hidden="true">☀︎</div>
+      <div>
+        <h1>Sundial</h1>
+        <p class="sub">Light / dark mode for any page</p>
+      </div>
+    </header>
+
+    <section class="group">
+      <h2>Mode</h2>
+      <label class="row">
+        <input type="radio" name="mode" value="manual">
+        <span><strong>Manual</strong><em>Toggle with the toolbar icon or ⌃⇧D.</em></span>
+      </label>
+      <label class="row">
+        <input type="radio" name="mode" value="os">
+        <span><strong>Follow system</strong><em>Match your OS light/dark setting automatically.</em></span>
+      </label>
+      <label class="row">
+        <input type="radio" name="mode" value="time">
+        <span><strong>Scheduled</strong><em>Dark between the times below.</em></span>
+      </label>
+    </section>
+
+    <section class="group times" id="times">
+      <h2>Schedule</h2>
+      <div class="time-row">
+        <label>Dark from <input type="time" id="start"></label>
+        <label>until <input type="time" id="end"></label>
+      </div>
+    </section>
+
+    <section class="group">
+      <h2>Appearance</h2>
+      <label class="row">
+        <input type="checkbox" id="affectDark">
+        <span><strong>Also darken already-dark sites</strong><em>Off by default, so sites with their own dark theme are left alone.</em></span>
+      </label>
+    </section>
+
+    <p class="saved" id="saved" hidden>Saved&nbsp;✓</p>
+  </main>
+  <script src="options.js"></script>
+</body>
+</html>

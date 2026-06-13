@@ -1,0 +1,46 @@
+{
+  "manifest_version": 3,
+  "name": "Sundial",
+  "version": "1.0.0",
+  "description": "Lightweight light/dark mode toggle for any web page. Click the icon, follow your system theme, or schedule dark hours.",
+  "permissions": ["storage"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Sundial — toggle dark mode",
+    "default_icon": {
+      "16": "icons/sun-16.png",
+      "32": "icons/sun-32.png",
+      "48": "icons/sun-48.png",
+      "128": "icons/sun-128.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "run_at": "document_start",
+      "css": ["sundial.css"],
+      "js": ["content.js"]
+    }
+  ],
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Alt+Shift+D",
+        "mac": "MacCtrl+Shift+D"
+      },
+      "description": "Toggle dark mode"
+    }
+  },
+  "icons": {
+    "16": "icons/sun-16.png",
+    "32": "icons/sun-32.png",
+    "48": "icons/sun-48.png",
+    "128": "icons/sun-128.png"
+  }
+}

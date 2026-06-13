@@ -1,0 +1,30 @@
+/*
+ * Sundial dark mode — universal invert technique, tuned for appearance.
+ *
+ * Rules only apply when <html> has the `sundial-on` class (toggled by content.js),
+ * so the stylesheet can be declared in the manifest yet stay inert until needed.
+ *
+ * How it looks good rather than harsh-negative:
+ *   - invert(1) hue-rotate(180deg)  -> dark page while keeping hues recognizable.
+ *   - contrast(0.9)                 -> white becomes soft light-gray, black becomes
+ *                                      soft dark-gray (no eye-searing #fff / #000).
+ *   - media gets invert+hue again   -> the two passes cancel, so photos/video land
+ *                                      back at their true colors (with mild softening).
+ */
+
+:root.sundial-on {
+  background-color: #fff !important; /* transparent regions invert to dark */
+  filter: invert(1) hue-rotate(180deg) contrast(0.9) !important;
+}
+
+/* Re-invert real media so it isn't shown as a color negative. */
+:root.sundial-on img,
+:root.sundial-on picture,
+:root.sundial-on video,
+:root.sundial-on canvas,
+:root.sundial-on iframe,
+:root.sundial-on embed,
+:root.sundial-on svg image,
+:root.sundial-on [style*="background-image"] {
+  filter: invert(1) hue-rotate(180deg) !important;
+}
