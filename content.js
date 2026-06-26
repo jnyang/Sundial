@@ -76,9 +76,9 @@ function alreadyDark() {
   }
 }
 
-function reportIcon(on) {
+function reportIcon(dark) {
   try {
-    const p = chrome.runtime.sendMessage({ effective: on });
+    const p = chrome.runtime.sendMessage({ dark });
     if (p && typeof p.catch === "function") p.catch(() => {});
   } catch (e) {
     /* extension context may be gone during reloads — ignore */
@@ -86,10 +86,28 @@ function reportIcon(on) {
 }
 
 function render() {
-  const on = wanted() && (cfg.affectDark || !alreadyDark());
+  const want = wanted();
   const root = document.documentElement;
+  // We're about to mutate <html>'s class ourselves, and themeObserver watches
+  // attribute changes on <html>/<body> to catch the *page's* theme changes.
+  // Without disconnecting first, our own remove()+toggle() below would each
+  // trigger a MutationRecord, which re-invokes render(), which mutates again —
+  // an infinite self-triggering loop (classList.remove() always writes the
+  // attribute when the token was present, even if toggle() then restores the
+  // same end state, so this isn't just a redundant-call non-issue).
+  themeObserver.disconnect();
+  // sundial.css forces html's background to white while sundial-on is set, which
+  // would otherwise mask the page's real background from alreadyDark() — e.g. a
+  // site that finishes applying its own dark theme *after* we've already
+  // inverted would look permanently "not dark" to every later re-check. Drop our
+  // own override before measuring (synchronously, so there's no visible flicker).
+  const wasOn = root && root.classList.contains("sundial-on");
+  if (wasOn) root.classList.remove("sundial-on");
+  const nativeDark = alreadyDark();
+  const on = want && (cfg.affectDark || !nativeDark);
   if (root) root.classList.toggle("sundial-on", on);
-  reportIcon(on);
+  reportIcon(nativeDark !== on); // inverting flips appearance, so XOR with native state
+  watchTheme(); // re-observe now that our own mutations are done
 
   clearTimeout(timer);
   if (cfg.mode === "time") {

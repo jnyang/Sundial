@@ -1,10 +1,8 @@
 "use strict";
 
 // Sundial service worker. Two jobs:
-//   1. Handle the toolbar click / keyboard shortcut -> take manual control and flip dark.
-//   2. Keep each tab's toolbar icon (sun/moon) in sync with what its page reports.
-
-const tabEffective = new Map(); // tabId -> last reported effective state (ephemeral)
+//   1. Handle the toolbar click / keyboard shortcut -> take manual control and flip intent.
+//   2. Keep each tab's toolbar icon (sun/moon) in sync with how its page actually looks.
 
 function iconPaths(name) {
   return {
@@ -15,34 +13,29 @@ function iconPaths(name) {
   };
 }
 
-function setIcon(tabId, on) {
-  const name = on ? "moon" : "sun";
+function setIcon(tabId, dark) {
+  const name = dark ? "moon" : "sun";
   chrome.action.setIcon({ tabId, path: iconPaths(name) }).catch(() => {});
   chrome.action
     .setTitle({
       tabId,
-      title: on ? "Sundial — dark mode ON (click for light)" : "Sundial — toggle dark mode",
+      title: dark ? "Sundial — page is dark (click to toggle)" : "Sundial — page is light (click to toggle)",
     })
     .catch(() => {});
 }
 
-// Pages report their effective dark state; reflect it on that tab's icon.
+// Pages report whether they currently look dark; reflect it on that tab's icon.
 chrome.runtime.onMessage.addListener((msg, sender) => {
-  if (sender.tab && msg && typeof msg.effective === "boolean") {
-    tabEffective.set(sender.tab.id, msg.effective);
-    setIcon(sender.tab.id, msg.effective);
+  if (sender.tab && msg && typeof msg.dark === "boolean") {
+    setIcon(sender.tab.id, msg.dark);
   }
 });
 
-// Click / shortcut: switch to manual control and flip the current effective state.
-chrome.action.onClicked.addListener(async (tab) => {
-  let base = tabEffective.get(tab.id);
-  if (typeof base !== "boolean") {
-    const { enabled } = await chrome.storage.local.get({ enabled: false });
-    base = enabled; // no report yet (e.g. just-loaded tab) — fall back to stored value
-  }
-  await chrome.storage.local.set({ mode: "manual", enabled: !base });
+// Click / shortcut: switch to manual control and flip the user's stored intent.
+// Read straight from storage (not a per-tab cache) so this can't go stale —
+// neither from the service worker idling out nor from the page's appearance
+// (which, with affectDark off, can stay unchanged across a toggle).
+chrome.action.onClicked.addListener(async () => {
+  const { enabled } = await chrome.storage.local.get({ enabled: false });
+  await chrome.storage.local.set({ mode: "manual", enabled: !enabled });
 });
-
-// Memory hygiene (works without the "tabs" permission — tabId only).
-chrome.tabs.onRemoved.addListener((tabId) => tabEffective.delete(tabId));
