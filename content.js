@@ -39,17 +39,38 @@ function wanted() {
 }
 
 // Skip pages that are already dark so we don't turn a nice dark theme bright/wrong.
+function bgLuminance(el) {
+  if (!el) return null;
+  const bg = getComputedStyle(el).backgroundColor;
+  const m = bg && bg.match(/[\d.]+/g);
+  if (!m || m.length < 3) return null;
+  const alpha = m.length >= 4 ? parseFloat(m[3]) : 1;
+  if (alpha < 0.5) return null; // mostly transparent → inconclusive, try the next candidate
+  const [r, g, b] = m.map(Number);
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b; // perceived luminance
+}
 function alreadyDark() {
   try {
-    const el = document.body || document.documentElement;
-    if (!el) return false;
-    const bg = getComputedStyle(el).backgroundColor;
-    const m = bg && bg.match(/[\d.]+/g);
-    if (!m || m.length < 3) return false;
-    const alpha = m.length >= 4 ? parseFloat(m[3]) : 1;
-    if (alpha < 0.5) return false; // mostly transparent → can't tell, treat as light
-    const [r, g, b] = m.map(Number);
-    return (0.2126 * r + 0.7152 * g + 0.0722 * b) < 80; // perceived luminance threshold
+    const root = document.documentElement;
+    const body = document.body;
+
+    // A page can declare `color-scheme: dark` (or `light dark`) and let the
+    // browser paint a dark canvas for the OS's current preference — with no
+    // explicit background-color anywhere for us to detect. Check that first.
+    const scheme = (getComputedStyle(root).colorScheme || "normal").toLowerCase();
+    const supportsDark = scheme.includes("dark");
+    const supportsLight = scheme.includes("light");
+    if (supportsDark && (!supportsLight || mq.matches)) return true;
+
+    // Otherwise fall back to explicit backgrounds: body, then <html>, then the
+    // page's main wrapper div — many SPAs (#root/#app/#__next) paint the real
+    // background there and leave <body> itself transparent.
+    const candidates = [body, root, body && body.firstElementChild];
+    for (const el of candidates) {
+      const lum = bgLuminance(el);
+      if (lum !== null) return lum < 80; // perceived luminance threshold
+    }
+    return false;
   } catch (e) {
     return false;
   }
