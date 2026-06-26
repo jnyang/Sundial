@@ -97,9 +97,21 @@ function render() {
   }
 }
 
+// Many sites apply their own dark theme by flipping a class/attribute on
+// <html> or <body> from JS well after DOMContentLoaded (e.g. YouTube adds a
+// `dark` attribute ~1s in). Watching for that directly — rather than relying
+// on a couple of fixed checkpoints — means alreadyDark() gets re-evaluated
+// the moment a site's own theme actually lands, however long that takes.
+const themeObserver = new MutationObserver(render);
+function watchTheme() {
+  if (document.documentElement) themeObserver.observe(document.documentElement, { attributes: true });
+  if (document.body) themeObserver.observe(document.body, { attributes: true });
+}
+
 // --- wiring -----------------------------------------------------------------
 chrome.storage.local.get(DEF, (r) => {
   cfg = Object.assign({}, DEF, r);
+  watchTheme();
   render();
 });
 
@@ -113,8 +125,12 @@ mq.addEventListener("change", () => {
   if (cfg.mode === "os") render();
 });
 
-// alreadyDark() needs <body>; at document_start it isn't there yet, so re-check later.
-document.addEventListener("DOMContentLoaded", render);
+// alreadyDark() needs <body>; at document_start it isn't there yet, so re-check
+// (and start observing it) once it exists.
+document.addEventListener("DOMContentLoaded", () => {
+  watchTheme();
+  render();
+});
 document.addEventListener("visibilitychange", () => {
   if (!document.hidden) render(); // catches scheduled boundaries crossed while backgrounded
 });
