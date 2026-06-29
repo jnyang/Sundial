@@ -15,11 +15,21 @@
 :root.sundial-on {
   background-color: #fff !important; /* transparent regions invert to dark */
   filter: invert(1) hue-rotate(180deg) contrast(0.9) !important;
+  /* Snap to the inverted state — if the page declares a transition on `filter`
+   * (or `all`), our invert would otherwise animate in. See the media note below. */
+  transition: none !important;
 }
 
-/* Re-invert real media so it isn't shown as a color negative. */
+/* Re-invert real media so it isn't shown as a color negative.
+ *
+ * Only ever counter-invert the element that actually *paints* the image — never
+ * a wrapper that also contains one. Two counter-filters nested inside each other
+ * cancel out (invert∘invert = identity), which leaves the root filter free to
+ * invert the image after all. That's why <picture> is intentionally absent: it
+ * wraps the <img> that already gets the filter below, so filtering both would
+ * double-cancel and the photo would show up as a negative (e.g. every product
+ * image on sites that ship <picture><img></picture>, like Patagonia). */
 :root.sundial-on img,
-:root.sundial-on picture,
 :root.sundial-on video,
 :root.sundial-on canvas,
 :root.sundial-on iframe,
@@ -27,4 +37,21 @@
 :root.sundial-on svg image,
 :root.sundial-on [style*="background-image"] {
   filter: invert(1) hue-rotate(180deg) !important;
+  /* Snap the counter-filter on instantly. Many sites put `transition: filter`
+   * on images (e.g. Patagonia's blur-up lazy-load). Without this, the root
+   * inverts instantly while the counter-filter *animates* in — so the image
+   * visibly flashes inverted, then settles to its true colors. Killing the
+   * transition makes it land on the final (un-inverted) image with no flash. */
+  transition: none !important;
+}
+
+/* The rules above only suppress transitions while `sundial-on` is present, so
+ * they cover turning dark ON. Turning it OFF removes `sundial-on`, which hands
+ * control back to the page's own `transition: filter` — so the page would
+ * animate from inverted back to normal (a visible fade). content.js wraps every
+ * flip with this class for one synchronous reflow; suppressing transitions on
+ * everything for that instant makes both directions snap with no in-between. */
+html.sundial-switching,
+html.sundial-switching * {
+  transition: none !important;
 }

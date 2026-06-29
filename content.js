@@ -96,6 +96,14 @@ function render() {
   // attribute when the token was present, even if toggle() then restores the
   // same end state, so this isn't just a redundant-call non-issue).
   themeObserver.disconnect();
+  // Suppress CSS transitions across the flip below. The page's own
+  // `transition: filter` (e.g. image blur-up) would otherwise animate the change
+  // — most visibly when turning OFF, where removing `sundial-on` lets the page
+  // fade from inverted back to normal. We add `sundial-switching` (→ transitions
+  // off everywhere), change state, force one reflow so the final filters commit
+  // with transitions still off, then drop it. All synchronous, so the page only
+  // ever paints the start and end states, never an animated in-between.
+  if (root) root.classList.add("sundial-switching");
   // sundial.css forces html's background to white while sundial-on is set, which
   // would otherwise mask the page's real background from alreadyDark() — e.g. a
   // site that finishes applying its own dark theme *after* we've already
@@ -105,9 +113,13 @@ function render() {
   if (wasOn) root.classList.remove("sundial-on");
   const nativeDark = alreadyDark();
   const on = want && (cfg.affectDark || !nativeDark);
-  if (root) root.classList.toggle("sundial-on", on);
+  if (root) {
+    root.classList.toggle("sundial-on", on);
+    void root.offsetWidth; // reflow: lock in the final filters with transitions off
+    root.classList.remove("sundial-switching"); // filters are settled now, so nothing animates
+  }
   reportIcon(nativeDark !== on); // inverting flips appearance, so XOR with native state
-  watchTheme(); // re-observe now that our own mutations are done
+  watchTheme(); // re-observe now that all our own mutations are done
 
   clearTimeout(timer);
   if (cfg.mode === "time") {

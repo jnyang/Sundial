@@ -47,6 +47,11 @@ updates all open tabs at once.
 - Colors are inverted algorithmically; most pages look great, a few designs may look slightly off.
 - Class-based CSS background images (vs `<img>` / inline styles) can't be reliably re-inverted,
   so some decorative backgrounds may appear as a color negative.
+- `<img>`/video elements are re-inverted back to their true colors, but for highly saturated
+  solid-color icons or logos (e.g. a pure-red badge), the round trip can still shift the color
+  slightly (e.g. red reading a bit pink). This comes from CSS `filter` clamping intermediate
+  values to the displayable range mid-chain — an inherent limit of the double-invert technique,
+  not a missed selector. Photos and typical mixed-color images are unaffected.
 - Content inside cross-origin iframes keeps its original colors (top frame only, by design).
 - Scheduled boundary flips happen for live and refocused tabs; a fully backgrounded tab updates
   when you return to it.
